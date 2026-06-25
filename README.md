@@ -1,4 +1,4 @@
-\# AI POC Builder
+**AI POC Builder**
 
 
 
@@ -6,7 +6,7 @@ A chat-driven proof-of-concept builder that converts natural-language prompts in
 
 
 
-\## Features
+**Features**
 
 
 
@@ -28,7 +28,7 @@ A chat-driven proof-of-concept builder that converts natural-language prompts in
 
 
 
-\## Tech Stack
+**Tech Stack**
 
 
 
@@ -36,7 +36,7 @@ Python, FastAPI, JavaScript, Node.js, Express.js, HTML, CSS, Tailwind CSS, OpenA
 
 
 
-\## Project Structure
+**Project Structure**
 
 
 
@@ -54,7 +54,7 @@ Python, FastAPI, JavaScript, Node.js, Express.js, HTML, CSS, Tailwind CSS, OpenA
 
 
 
-\## Setup
+**Setup**
 
 
 

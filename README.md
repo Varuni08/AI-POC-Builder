@@ -86,11 +86,4 @@ Create a `.env` file using `.env.example` and add your OpenAI API key.
 
 
 
-\## Note
-
-
-
-Originally developed as part of my work at CodeWork AI and published on my personal GitHub with permission.
-
-
 

@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POC Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #000000;
+      --surface:   #0e0e0e;
+      --surface2:  #141414;
+      --surface3:  #1a1a1a;
+      --border:    #1e1e1e;
+      --border2:   #252525;
+      --text:      #ffffff;
+      --text2:     #aaaaaa;
+      --text3:     #ffffff;
+      --accent:    #EACFA5;
+      --gen:       #BE9A98;
+      --gen-dim:   #BE9A9822;
+      --improve:   #BE9A98;
+      --improve-dim: #BE9A9818;
+      --p2:        #EACFA5;
+      --p2-dim:    #EACFA518;
+      --green:     #68d391;
+      --red:       #fc8181;
+      --serif:     'Lora', Georgia, 'Times New Roman', serif;
+      --mono:      'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--serif);
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .topbar-logo {
+      font-family: 'Times New Roman', serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0px;
+    }
+
+    .topbar-spacer { flex: 1; }
+
+    .topbar-status {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Layout ── */
+    .app { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Preview pane ── */
+    .preview {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .preview-toolbar {
+      height: 48px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 3px;
+    }
+
+    .tab {
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--serif);
+      padding: 5px 16px;
+      border-radius: 20px;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--surface3);
+      color: #ffffff;
+    }
+
+    .toolbar-spacer { flex: 1; }
+
+    .btn-regen {
+      height: 32px;
+      padding: 0 16px;
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      color: var(--text2);
+      font-size: 12px;
+      font-family: var(--serif);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-regen.visible { display: flex; }
+    .btn-regen:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-regen:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .badge {
+      font-size: 10px;
+      font-family: var(--mono);
+      padding: 4px 12px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text2);
+      border: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .badge.ready    { color: var(--green); border-color: #68d39130; background: #68d39110; }
+    .badge.generating { color: var(--accent); border-color: #EACFA530; background: #EACFA510; }
+    .badge.empty    { color: var(--text2); }
+
+    .btn-copy {
+      height: 32px;
+      padding: 0 14px;
+      font-size: 11px;
+      font-family: var(--mono);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      background: none;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+    .preview-body { flex: 1; position: relative; overflow: hidden; }
+
+    #preview-iframe { width: 100%; height: 100%; border: none; background: #fff; display: none; }
+
+    .empty-state {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+    }
+
+    .empty-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.3;
+    }
+
+    .empty-content {
+      position: relative; z-index: 1;
+      text-align: center;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 12px;
+    }
+
+    .empty-ring {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      background: var(--surface);
+      color: var(--text2);
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      font-family: var(--serif);
+      color: #ffffff;
+    }
+
+    .empty-sub {
+      font-size: 12px;
+      font-family: var(--serif);
+      color: #ffffff;
+    }
+
+    .code-pane {
+      flex: 1; overflow: auto; display: none;
+      background: var(--bg);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+
+    .code-pane textarea {
+      width: 100%;
+      height: 100%;
+      font-size: 12px;
+      line-height: 1.65;
+      padding: 20px;
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      border: none;
+      outline: none;
+      resize: none;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 300px;
+      min-width: 300px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #ffffff;
+      padding: 14px 16px 8px;
+      font-family: var(--serif);
+      flex-shrink: 0;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 0 12px 12px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+
+    .template-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .template-card:hover {
+      border-color: var(--accent);
+      background: #EACFA510;
+      transform: translateY(-1px);
+    }
+
+    .template-card .t-cat {
+      font-size: 9px;
+      font-family: var(--serif);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .template-card .t-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #ffffff;
+      font-family: var(--serif);
+    }
+
+    .template-card .t-desc {
+      font-size: 10px;
+      color: var(--text2);
+      line-height: 1.4;
+      font-family: var(--serif);
+      font-style: italic;
+    }
+
+    .sidebar-divider { height: 1px; background: var(--border); margin: 4px 0; flex-shrink: 0; }
+
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+      min-height: 0;
+    }
+
+    .chat-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--text2);
+      font-size: 12px;
+      font-family: var(--serif);
+      text-align: center;
+      padding: 20px;
+      flex: 1;
+    }
+
+    .chat-empty-line { width: 32px; height: 1px; background: var(--border2); margin-bottom: 4px; }
+
+    .msg-user {
+      align-self: flex-end;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 16px 16px 4px 16px;
+      padding: 9px 14px;
+      font-size: 12.5px;
+      font-family: var(--serif);
+      color: #ffffff;
+      max-width: 90%;
+      line-height: 1.5;
+    }
+
+    .msg-ai {
+      align-self: flex-start;
+      background: #EACFA510;
+      border: 1px solid #EACFA530;
+      border-radius: 16px 16px 16px 4px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-family: var(--serif);
+      color: var(--accent);
+      max-width: 90%;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .msg-thinking {
+      align-self: flex-start;
+      font-size: 11px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      padding: 4px 0;
+    }
+
+    .suggestions {
+      align-self: flex-start;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+      max-width: 100%;
+    }
+
+    .suggestion-pill {
+      font-size: 11px;
+      font-family: var(--serif);
+      font-style: italic;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid #BE9A9840;
+      color: var(--gen);
+      background: var(--gen-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      line-height: 1.4;
+    }
+
+    .suggestion-pill:hover {
+      background: #BE9A9830;
+      border-color: var(--gen);
+      color: #fff;
+    }
+
+    .dot-anim { display: flex; gap: 4px; }
+    .dot-anim span {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      animation: dotbounce 1.2s ease-in-out infinite;
+      background: var(--accent);
+    }
+    .dot-anim span:nth-child(2) { animation-delay: .2s; }
+    .dot-anim span:nth-child(3) { animation-delay: .4s; }
+    @keyframes dotbounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+    /* AI Toggles */
+    .ai-toggles {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .ai-toggle {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .ai-toggle.on {
+      border-color: var(--accent);
+      background: #EACFA510;
+    }
+
+    .ai-toggle-label {
+      font-size: 10.5px;
+      font-family: var(--serif);
+      color: var(--text2);
+      line-height: 1.3;
+    }
+
+    .ai-toggle.on .ai-toggle-label { color: var(--accent); }
+
+    .toggle-switch {
+      width: 28px; height: 16px;
+      background: var(--border2);
+      border-radius: 8px;
+      position: relative;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .ai-toggle.on .toggle-switch { background: var(--accent); }
+
+    .toggle-knob {
+      width: 10px; height: 10px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+    }
+
+    .ai-toggle.on .toggle-knob { transform: translateX(12px); }
+
+    /* Input area */
+    .input-area {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .prompt-wrap { position: relative; }
+
+    .prompt-box {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 12px 14px 32px;
+      font-size: 13px;
+      font-family: var(--serif);
+      color: var(--text);
+      resize: none;
+      min-height: 88px;
+      line-height: 1.55;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .prompt-box:focus { border-color: var(--accent); }
+    .prompt-box::placeholder { color: var(--text2); font-style: italic; }
+
+    .prompt-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 10px;
+      color: var(--text2);
+      font-family: var(--mono);
+      pointer-events: none;
+    }
+
+    .btn-row { display: flex; gap: 8px; }
+
+    .btn-generate {
+      flex: 1;
+      height: 38px;
+      background: var(--gen);
+      color: #ffffff;
+      border: none;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--serif);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-generate:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-generate:active { transform: scale(0.98); }
+    .btn-generate:disabled {
+      background: var(--surface3);
+      color: var(--text2);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-improve {
+      height: 38px;
+      padding: 0 14px;
+      background: var(--improve-dim);
+      border: 1px solid #BE9A9840;
+      border-radius: 20px;
+      color: var(--improve);
+      font-size: 12px;
+      font-family: var(--serif);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+      white-space: nowrap;
+    }
+
+    .btn-improve.visible { display: block; }
+    .btn-improve:hover { background: #BE9A9830; }
+    .btn-improve:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-clear {
+      height: 38px;
+      padding: 0 14px;
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      color: var(--text2);
+      font-size: 12px;
+      font-family: var(--serif);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-clear:hover { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">POC Builder</div>
+  <div class="topbar-spacer"></div>
+</div>
+
+<div class="app">
+
+  <div class="preview">
+    <div class="preview-toolbar">
+      <div class="tabs">
+        <div class="tab active" id="tab-preview" onclick="switchTab('preview')">Preview</div>
+        <div class="tab" id="tab-code" onclick="switchTab('code')">Code</div>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <button class="btn-regen" id="regen-btn" onclick="regenerate()">↺ Regenerate</button>
+      <span class="badge empty" id="status-badge">
+        <span id="badge-text">no output</span>
+      </span>
+      <button class="btn-copy" id="copy-btn" onclick="copyCode()">copy code</button>
+      <button class="btn-copy" onclick="downloadCode()">download</button>
+    </div>
+
+    <div class="preview-body" id="preview-wrap">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-grid"></div>
+        <div class="empty-content">
+          <div class="empty-ring">+</div>
+          <div class="empty-title">Nothing built yet</div>
+          <div class="empty-sub">Pick a template or write a prompt</div>
+        </div>
+      </div>
+      <iframe id="preview-iframe" sandbox="allow-scripts"></iframe>
+    </div>
+
+    <div class="code-pane" id="code-pane">
+      <textarea id="code-display" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="section-label" id="templates-label">Templates</div>
+
+    <div class="template-grid" id="template-grid">
+      <div class="template-card" onclick="setPrompt('A personal portfolio website with a hero, about section, projects grid and contact form. Modern, minimal, dark theme.')">
+        <div class="t-cat">personal</div>
+        <div class="t-name">Portfolio</div>
+        <div class="t-desc">Personal site with projects</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A SaaS landing page with hero section, features, testimonials and a call to action. Clean and modern design.')">
+        <div class="t-cat">marketing</div>
+        <div class="t-name">Landing page</div>
+        <div class="t-desc">Product or startup page</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('An analytics dashboard with a sidebar nav, KPI metric cards, a line chart and a data table. Dark theme.')">
+        <div class="t-cat">data</div>
+        <div class="t-name">Dashboard</div>
+        <div class="t-desc">Analytics with charts</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A login and signup page with email and password fields, form validation, and a clean modern design.')">
+        <div class="t-cat">auth</div>
+        <div class="t-name">Auth form</div>
+        <div class="t-desc">Login and signup</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A kanban board with To Do, In Progress and Done columns. Cards can be moved, added and deleted.')">
+        <div class="t-cat">productivity</div>
+        <div class="t-name">Kanban board</div>
+        <div class="t-desc">Task management</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A todo list app with ability to add, complete and delete tasks. Filters for all, active and completed.')">
+        <div class="t-cat">productivity</div>
+        <div class="t-name">Todo app</div>
+        <div class="t-desc">Simple task tracker</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('An e-commerce product page with image gallery, product details, size selector, add to cart button and reviews section.')">
+        <div class="t-cat">commerce</div>
+        <div class="t-name">Product page</div>
+        <div class="t-desc">E-commerce detail view</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A blog homepage with a featured hero post, grid of article cards, category tags, and newsletter signup.')">
+        <div class="t-cat">content</div>
+        <div class="t-name">Blog</div>
+        <div class="t-desc">Articles and posts</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A weather app UI showing current weather, hourly forecast, 7-day forecast, humidity and wind stats.')">
+        <div class="t-cat">utility</div>
+        <div class="t-name">Weather app</div>
+        <div class="t-desc">Forecast and conditions</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A music player UI with album art, track info, play controls, progress bar, volume slider and playlist sidebar.')">
+        <div class="t-cat">media</div>
+        <div class="t-name">Music player</div>
+        <div class="t-desc">Audio player interface</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A chat UI like a messaging app with a contact list sidebar, message bubbles, timestamps and message input area.')">
+        <div class="t-cat">social</div>
+        <div class="t-name">Chat UI</div>
+        <div class="t-desc">Messaging interface</div>
+      </div>
+      <div class="template-card" onclick="setPrompt('A restaurant menu page with food categories, item cards with names, descriptions and prices, and an order button.')">
+        <div class="t-cat">food</div>
+        <div class="t-name">Menu</div>
+        <div class="t-desc">Restaurant ordering</div>
+      </div>
+    </div>
+
+    <div class="sidebar-divider" id="templates-divider"></div>
+    <div class="section-label">Conversation</div>
+
+    <div class="chat-area" id="chat">
+      <div class="chat-empty" id="chat-empty">
+        <div class="chat-empty-line"></div>
+        <span>Pick a template or describe<br/>your idea below</span>
+      </div>
+    </div>
+
+    <div class="ai-toggles">
+      <div class="ai-toggle" id="toggle-improve" onclick="toggleFeature('improve')">
+        <div class="ai-toggle-label">Improve prompt</div>
+        <div class="toggle-switch"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="ai-toggle" id="toggle-suggest" onclick="toggleFeature('suggest')">
+        <div class="ai-toggle-label">Suggest edits</div>
+        <div class="toggle-switch"><div class="toggle-knob"></div></div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="prompt-wrap">
+        <textarea class="prompt-box" id="prompt" placeholder="Describe what you want to build..." rows="3"></textarea>
+        <span class="prompt-hint">ctrl + enter</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn-improve" id="btn-improve" onclick="improvePrompt()">Improve</button>
+        <button class="btn-generate" id="gen-btn" onclick="generate()">
+          <span id="gen-label">Generate</span>
+        </button>
+        <button class="btn-clear" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const KEYS = {
+    chat: 'poc_builder_chat',
+    html: 'poc_builder_html',
+    features: 'poc_builder_features',
+    userId: 'poc_builder_user_id'
+};
+
+// Get or create a unique user ID for this browser
+function getUserId() {
+    let id = localStorage.getItem(KEYS.userId);
+    if (!id) {
+        id = 'u_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+        localStorage.setItem(KEYS.userId, id);
+        console.log('Generated new user ID:', id);
+    }
+    return id;
+}
+const USER_ID = getUserId();
+
+// Helper: fetch with user ID header
+function apiFetch(url, options = {}) {
+    options.headers = {
+        ...(options.headers || {}),
+        'X-User-Id': USER_ID,
+        'Content-Type': 'application/json'
+    };
+    return fetch(url, options);
+}
+
+  let latestHTML   = '';
+  let lastPrompt   = '';
+  let chatMessages = JSON.parse(localStorage.getItem(KEYS.chat) || '[]');
+  let features = JSON.parse(localStorage.getItem(KEYS.features) || '{"improve":false,"suggest":false}');
+
+  const chatEl      = document.getElementById('chat');
+  const chatEmpty   = document.getElementById('chat-empty');
+  const promptEl    = document.getElementById('prompt');
+  const genBtn      = document.getElementById('gen-btn');
+  const genLabel    = document.getElementById('gen-label');
+  const regenBtn    = document.getElementById('regen-btn');
+  const improveBtn  = document.getElementById('btn-improve');
+  const iframe      = document.getElementById('preview-iframe');
+  const emptyState  = document.getElementById('empty-state');
+  const statusBadge = document.getElementById('status-badge');
+  const badgeText   = document.getElementById('badge-text');
+  const codeDisplay = document.getElementById('code-display');
+
+  function applyToggles() {
+    document.getElementById('toggle-improve').classList.toggle('on', features.improve);
+    document.getElementById('toggle-suggest').classList.toggle('on', features.suggest);
+    improveBtn.classList.toggle('visible', features.improve);
+  }
+
+  function toggleFeature(key) {
+    features[key] = !features[key];
+    localStorage.setItem(KEYS.features, JSON.stringify(features));
+    applyToggles();
+  }
+
+  function hideTemplates() {
+    document.getElementById('template-grid').style.display = 'none';
+    document.getElementById('templates-label').style.display = 'none';
+    document.getElementById('templates-divider').style.display = 'none';
+  }
+
+  function addMessage(role, text) {
+    chatEmpty.style.display = 'none';
+    hideTemplates();
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'msg-user' : 'msg-ai';
+    div.textContent = text;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+
+  function addThinking(label) {
+    const div = document.createElement('div');
+    div.className = 'msg-thinking';
+    div.innerHTML = `<div class="dot-anim"><span></span><span></span><span></span></div> ${label || 'generating...'}`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+
+  function addSuggestions(suggestions) {
+    const wrap = document.createElement('div');
+    wrap.className = 'suggestions';
+    suggestions.forEach(s => {
+      const pill = document.createElement('div');
+      pill.className = 'suggestion-pill';
+      pill.textContent = s;
+      pill.onclick = () => {
+        if (genBtn.disabled) return;
+        promptEl.value = s;
+        generate();
+      };
+      wrap.appendChild(pill);
+    });
+    chatEl.appendChild(wrap);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function setStatus(s) {
+    const map = { ready: 'ready', generating: 'generating...', empty: 'no output' };
+    statusBadge.className = 'badge ' + s;
+    badgeText.textContent = map[s];
+  }
+
+  function setGenerating(on) {
+    genBtn.disabled = on;
+    regenBtn.disabled = on;
+    improveBtn.disabled = on;
+    genLabel.textContent = on ? 'Generating...' : 'Generate';
+    setStatus(on ? 'generating' : 'ready');
+  }
+
+  function renderPreview(html) {
+    emptyState.style.display = 'none';
+    iframe.style.display = 'block';
+    
+    // clean up any previous blob URL
+    if (iframe.dataset.blobUrl) {
+        URL.revokeObjectURL(iframe.dataset.blobUrl);
+    }
+    
+    // create new blob URL for this html
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    iframe.dataset.blobUrl = url;
+    
+    // remove srcdoc and use src instead
+    iframe.removeAttribute('srcdoc');
+    iframe.src = url;
+    
+    regenBtn.classList.add('visible');
+  }
+
+  function switchTab(tab) {
+    document.getElementById('tab-preview').classList.toggle('active', tab === 'preview');
+    document.getElementById('tab-code').classList.toggle('active', tab === 'code');
+    document.getElementById('preview-wrap').style.display = tab === 'preview' ? 'flex' : 'none';
+    document.getElementById('code-pane').style.display   = tab === 'code'    ? 'flex' : 'none';
+    if (tab === 'preview') {
+      document.getElementById('preview-wrap').style.flexDirection = 'column';
+      if (latestHTML) renderPreview(latestHTML);
+    }
+  }
+
+  function setPrompt(text) { promptEl.value = text; promptEl.focus(); }
+
+  async function copyCode() {
+    if (!latestHTML) return;
+    await navigator.clipboard.writeText(latestHTML);
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'copied';
+    setTimeout(() => btn.textContent = 'copy code', 1500);
+  }
+
+  function downloadCode() {
+    if (!latestHTML) return;
+    const blob = new Blob([latestHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function saveState() {
+    localStorage.setItem(KEYS.chat, JSON.stringify(chatMessages));
+    localStorage.setItem(KEYS.html, latestHTML);
+  }
+
+  function loadState() {
+    if (chatMessages.length > 0) {
+      chatEmpty.style.display = 'none';
+      hideTemplates();
+      chatMessages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = m.role === 'user' ? 'msg-user' : 'msg-ai';
+        div.textContent = m.text;
+        chatEl.appendChild(div);
+      });
+    }
+    const html = localStorage.getItem(KEYS.html) || '';
+    if (html) {
+      latestHTML = html;
+      renderPreview(html);
+      codeDisplay.value = html;
+      setStatus('ready');
+    }
+  }
+
+  async function improvePrompt() {
+    const prompt = promptEl.value.trim();
+    if (!prompt) return;
+    improveBtn.disabled = true;
+    improveBtn.textContent = 'Improving...';
+    const thinking = addThinking('improving your prompt...');
+    try {
+      const res = await apiFetch('/improve-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      // vague prompt
+      if (data.mode === 'clarify') {
+        thinking.remove();
+        addMessage('ai', data.question);
+        improveBtn.disabled = false;
+        improveBtn.textContent = 'Improve';
+        return;
+      }
+
+      // good prompt
+      let improved = data.improved;
+      if (improved.includes('->')) {
+        improved = improved.split('->').pop().trim();
+      }
+      improved = improved.replace(/^["']|["']$/g, '').trim();
+      promptEl.value = improved;
+      thinking.remove();
+      addMessage('ai', 'Prompt improved. Review it and hit Generate when ready.');
+
+    } catch (err) {
+      thinking.remove();
+      addMessage('ai', 'Could not improve prompt: ' + err.message);
+    }
+    improveBtn.disabled = false;
+    improveBtn.textContent = 'Improve';
+  }
+
+  async function callGenerate(prompt) {
+    setGenerating(true);
+    const thinking = addThinking('generating...');
+    try {
+      const res = await apiFetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      
+      const data = await res.json();
+if (data.error) throw new Error(data.error);
+
+      if (data.mode === 'clarify') {
+          thinking.remove();
+          addMessage('ai', data.question);
+          setGenerating(false);
+          return;
+      }
+      let html = data.html;
+
+      html = html.replace(/^```html?\n?/i, '').replace(/```$/, '').trim();
+      latestHTML = html;
+      thinking.remove();
+      const aiMsg = data.message || 'Done. Check the preview. Ask me to change anything if needed.';
+      chatMessages.push({ role: 'ai', text: aiMsg });
+      addMessage('ai', aiMsg);
+      renderPreview(html);
+      codeDisplay.value = html;
+      saveState();
+      if (features.suggest) {
+        const sRes = await apiFetch('/suggest-edits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        const sData = await sRes.json();
+        if (sData.suggestions) addSuggestions(sData.suggestions);
+      }
+    } catch (err) {
+      thinking.remove();
+      addMessage('ai', 'Something went wrong: ' + err.message);
+      setStatus('empty');
+    }
+    setGenerating(false);
+  }
+
+  async function generate() {
+    const prompt = promptEl.value.trim();
+    if (!prompt) return;
+    lastPrompt = prompt;
+    promptEl.value = '';
+    chatMessages.push({ role: 'user', text: prompt });
+    addMessage('user', prompt);
+    await callGenerate(prompt);
+  }
+
+  async function regenerate() {
+    if (!lastPrompt) return;
+    addMessage('user', 'Regenerate with a different style.');
+    await callGenerate('Regenerate this with a completely different visual style and layout: ' + lastPrompt);
+  }
+
+  async function clearAll() {
+    chatMessages = []; latestHTML = ''; lastPrompt = '';
+    chatEl.innerHTML = '';
+    chatEl.appendChild(chatEmpty);
+    chatEmpty.style.display = 'flex';
+    document.getElementById('template-grid').style.display = 'grid';
+    document.getElementById('templates-label').style.display = 'block';
+    document.getElementById('templates-divider').style.display = 'block';
+    iframe.style.display = 'none';
+    iframe.removeAttribute('srcdoc');
+    iframe.src = 'about:blank';
+    if (iframe.dataset.blobUrl) {
+      URL.revokeObjectURL(iframe.dataset.blobUrl);
+      delete iframe.dataset.blobUrl;
+    }
+    emptyState.style.display = 'flex';
+    codeDisplay.value = '';
+    regenBtn.classList.remove('visible');
+    setStatus('empty');
+    Object.values(KEYS).forEach(k => { if (k !== KEYS.features) localStorage.removeItem(k); });
+    await apiFetch('/reset', { method: 'POST' });
+  }
+
+  promptEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generate();
+  });
+
+  codeDisplay.addEventListener('input', () => {
+    latestHTML = codeDisplay.value;
+    saveState();
+  });
+
+  applyToggles();
+  loadState();
+  switchTab('preview');
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Generated application data
+ai/projects/
+ai/body.json
+ai/openai_cost.json
+
+# Logs and temporary files
+*.log
+*.tmp
+.cache/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+.env
+.env.*
+!.env.example
+
+# Local sample media
+samples/
+*.mp4
+
+# Files not required in public repository
+samples/
+deploy.ps1
+start.bat
+index.txt
+structure.txt
